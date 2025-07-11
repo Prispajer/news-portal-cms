@@ -1,4 +1,4 @@
-﻿namespace NewsPortalCMS.Domain
+﻿namespace NewsPortalCMS.Domain.Entities
 {
     public class Article
     {
@@ -7,7 +7,10 @@
         public string Content { get; set; } = string.Empty;
         public string Author { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
-        public Status Status { get; set; } = Status.Draft;
+        public ArticleStatus Status { get; set; } = ArticleStatus.Draft;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public Guid CategoryId { get; set; }
+        public Category Category { get; set; } = null!;
     }
 }
