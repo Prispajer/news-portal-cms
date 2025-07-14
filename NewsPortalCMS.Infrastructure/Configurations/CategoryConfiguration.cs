@@ -10,7 +10,7 @@ namespace NewsPortalCMS.Infrastructure.Configurations
         {
             builder.HasKey(x => x.Id);
             builder.Property(x => x.Name).HasColumnType("varchar(100)").IsRequired();
-            builder.HasIndex(x => x.Name).IsUnique();                   
+            builder.HasIndex(x => x.Name).IsUnique();
             builder.HasMany(c => c.Articles).WithOne(a => a.Category).HasForeignKey(a => a.CategoryId).IsRequired();
         }
     }

@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using NewsPortalCMS.Domain.Entities;
+using NewsPortalCMS.Infrastructure.Configurations;
 
 namespace NewsPortalCMS.Infrastructure.Data
 {
@@ -11,8 +8,16 @@ namespace NewsPortalCMS.Infrastructure.Data
     {
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
+            new ArticleConfiguration().Configure(modelBuilder.Entity<Article>());
+            new CategoryConfiguration().Configure(modelBuilder.Entity<Category>());
         }
-    
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+        }
+
+        public DbSet<Article> Articles { get; set; }
+        public DbSet<Category> Categories { get; set; }
     }
 }

@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NewsPortalCMS.Domain\NewsPortalCMS.Domain.csproj" />
+    <ProjectReference Include="..\NewsPortalCMS.Application\NewsPortalCMS.Application.csproj" />
   </ItemGroup>
 
 </Project>
