@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NewsPortalCMS.Infrastructure.Migrations
 {
     [DbContext(typeof(NewsPortalCmsDbContext))]
-    [Migration("20250714150813_InitialCreate")]
+    [Migration("20250715180623_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -43,7 +43,9 @@ namespace NewsPortalCMS.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -62,6 +64,19 @@ namespace NewsPortalCMS.Infrastructure.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("Articles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("f9c68059-1e83-47a9-b6de-84ab11223344"),
+                            Author = "",
+                            CategoryId = new Guid("a1b2c3d4-e5f6-7890-1234-56789abcdef0"),
+                            Content = "Pierwszy artykuł",
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Slug = "",
+                            Status = "Draft",
+                            Title = "Witaj!"
+                        });
                 });
 
             modelBuilder.Entity("NewsPortalCMS.Domain.Entities.Category", b =>
@@ -80,6 +95,18 @@ namespace NewsPortalCMS.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Categories");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a1b2c3d4-e5f6-7890-1234-56789abcdef0"),
+                            Name = "Tech"
+                        },
+                        new
+                        {
+                            Id = new Guid("b2c3d4e5-f6a1-7890-1234-56789abcdef1"),
+                            Name = "Sport"
+                        });
                 });
 
             modelBuilder.Entity("NewsPortalCMS.Domain.Entities.Article", b =>

@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using NewsPortalCMS.Application.Dto.Article;
 using NewsPortalCMS.Application.Interfaces;
+using NewsPortalCMS.Domain.Entities;
+using NewsPortalCMS.Domain.Models;
 
 namespace NewsPortalCMS.Api.Controllers;
 
@@ -21,14 +23,14 @@ public class ArticleController : ControllerBase
         var result = await _articleService.CreateArticleAsync(createArticleDto);
         if (!result.IsSuccess)
             return BadRequest(result.Message);
-        return CreatedAtAction(nameof(GetArticles), new { articleId = result.Data!.Id }, result);
+        return CreatedAtAction(nameof(GetArticle), new { articleId = result.Data!.Id }, result.Data);
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ArticleListDto>>> GetArticles([FromQuery] string? status)
     {
         var result = await _articleService.GetArticlesAsync(status);
-        return Ok(result);
+        return Ok(result.Data);
     }
 
     [HttpGet("{articleId:guid}")]
@@ -58,4 +60,10 @@ public class ArticleController : ControllerBase
         return Ok(result.Data);
     }
 
+    [HttpGet("/stats")]
+    public async Task<ActionResult<ArticleStats>> GetStats()
+    {
+        var result = await _articleService.GetArticlesStatsAsync();
+        return Ok(result.Data);
+    }
 }

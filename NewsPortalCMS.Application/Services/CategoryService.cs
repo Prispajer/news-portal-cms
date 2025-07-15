@@ -8,12 +8,12 @@ namespace NewsPortalCMS.Application.Services
 {
     public class CategoryService : ICategoryService
     {
-        private readonly ICategoryRepository _repository;
+        private readonly ICategoryRepository _categoryRepository;
         private readonly IMapper _mapper;
 
-        public CategoryService(ICategoryRepository repository, IMapper mapper)
+        public CategoryService(ICategoryRepository categoryRepository, IMapper mapper)
         {
-            _repository = repository;
+            _categoryRepository = categoryRepository;
             _mapper = mapper;
         }
 
@@ -21,22 +21,24 @@ namespace NewsPortalCMS.Application.Services
         {
             try
             {
-                var dbCategory = _repository.GetByNameAsync(createCategoryDto.Name);
-                if (dbCategory != null)
+                var dbCategory = await _categoryRepository.GetByNameAsync(createCategoryDto.Name);
+
+                if (dbCategory)
                 {
-                    return Result<CategoryDetailDto>.Failure("Category name must be unique.");
+                    return Result<CategoryDetailDto>.Failure("Category name must be unique");
                 }
+
                 var category = _mapper.Map<Category>(createCategoryDto);
                 category.Id = Guid.NewGuid();
-                var createdCategory = await _repository.CreateAsync(category);
+                var createdCategory = await _categoryRepository.CreateAsync(category);
 
-                var resultDto = _mapper.Map<CategoryDetailDto>(createdCategory);
+                var categoryDetailDto = _mapper.Map<CategoryDetailDto>(createdCategory);
 
-                return Result<CategoryDetailDto>.Success(resultDto, "Pomyślnie utworzono dane!");
+                return Result<CategoryDetailDto>.Success(categoryDetailDto, "Data has been created");
             }
             catch (Exception ex)
             {
-                return Result<CategoryDetailDto>.Failure($"Błąd podczas tworzenia artykułu: {ex.Message}");
+                return Result<CategoryDetailDto>.Failure($"An error has occured during creating article: {ex.Message}");
             }
         }
 
@@ -44,15 +46,15 @@ namespace NewsPortalCMS.Application.Services
         {
             try
             {
-                var categories = await _repository.GetAllAsync();
+                var dbCategories = await _categoryRepository.GetAllAsync();
 
-                var categoriesDto = _mapper.Map<IEnumerable<CategoryDetailDto>>(categories);
+                var categoriesDetailDto = _mapper.Map<IEnumerable<CategoryDetailDto>>(dbCategories);
 
-                return Result<IEnumerable<CategoryDetailDto>>.Success(categoriesDto, "Pomyślnie przywrócono dane!");
+                return Result<IEnumerable<CategoryDetailDto>>.Success(categoriesDetailDto, "Data has been restored");
             }
             catch (Exception ex)
             {
-                return Result<IEnumerable<CategoryDetailDto>>.Failure($"Błąd podczas pobierania artykułów: {ex.Message}");
+                return Result<IEnumerable<CategoryDetailDto>>.Failure($"An error has occured during fetching articles: {ex.Message}");
             }
         }
     }

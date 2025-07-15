@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 using NewsPortalCMS.Application.Dto.Category;
 
-namespace NewsPortalCMS.Api.Validators.Category
+namespace NewsPortalCMS.Application.Validators.Fluent.Category
 {
     public class CreateCategoryDtoValidator : AbstractValidator<CreateCategoryDto>
     {

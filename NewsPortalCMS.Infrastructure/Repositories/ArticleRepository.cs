@@ -21,7 +21,7 @@ namespace NewsPortalCMS.Infrastructure.Repositories
             return article;
         }
 
-        public async Task<IEnumerable<Article>> GetAllAsync(ArticleStatus? status)
+        public async Task<IEnumerable<Article>> GetAllAsync(ArticleStatus? status = null)
         {
             IQueryable<Article> query = _context.Articles.Include(a => a.Category);
             if (status.HasValue)
@@ -33,7 +33,9 @@ namespace NewsPortalCMS.Infrastructure.Repositories
 
         public async Task<Article?> GetByIdAsync(Guid id)
         {
-            return await _context.Articles.FindAsync(id);
+            return await _context.Articles
+                .Include(a => a.Category)
+                .FirstOrDefaultAsync(a => a.Id == id);
         }
 
         public async Task<Article?> GetBySlugAsync(string slug)

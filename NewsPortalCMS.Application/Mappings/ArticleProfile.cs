@@ -10,8 +10,9 @@ namespace NewsPortalCMS.Application.Mappings
         {
             CreateMap<Article, ArticleListDto>()
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
-            CreateMap<Article, ArticleDetailDto>();
             CreateMap<CreateArticleDto, Article>();
+            CreateMap<UpdateArticleDto, Article>();
+            CreateMap<Article, ArticleDetailDto>();
         }
     }
 }

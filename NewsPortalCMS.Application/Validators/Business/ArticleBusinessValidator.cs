@@ -1,7 +1,7 @@
 ﻿using NewsPortalCMS.Application.Dto;
 using NewsPortalCMS.Domain.Entities;
 
-namespace NewsPortalCMS.Application.Validation
+namespace NewsPortalCMS.Application.Validators.Business
 {
     public class ArticleBusinessValidator
     {

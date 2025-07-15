@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 using NewsPortalCMS.Application.Dto.Article;
 
-namespace NewsPortalCMS.Api.Validators.Article
+namespace NewsPortalCMS.Application.Validators.Fluent.Article
 {
     public class CreateArticleDtoValidator : AbstractValidator<CreateArticleDto>
     {

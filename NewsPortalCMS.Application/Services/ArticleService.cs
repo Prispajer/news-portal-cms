@@ -2,37 +2,71 @@
 using NewsPortalCMS.Application.Dto;
 using NewsPortalCMS.Application.Dto.Article;
 using NewsPortalCMS.Application.Interfaces;
-using NewsPortalCMS.Application.Validation;
+using NewsPortalCMS.Application.Validators.Business;
 using NewsPortalCMS.Domain.Entities;
+using NewsPortalCMS.Domain.Models;
+using NewsPortalCMS.Domain.Services;
+using System.Diagnostics.Metrics;
+using System.Text.RegularExpressions;
 
 namespace NewsPortalCMS.Application.Services
 {
     public class ArticleService : IArticleService
     {
-        private readonly IArticleRepository _repository;
+        private readonly IArticleRepository _articleRepository;
+        private readonly ICategoryRepository _categoryRepository;
         private readonly IMapper _mapper;
-
-        public ArticleService(IArticleRepository repository, IMapper mapper, ArticleBusinessValidator articleBusinessValidator)
+        private readonly ISlugService _slugService;
+        public ArticleService(
+            IArticleRepository articleRepository,
+            ICategoryRepository categoryRepository,
+            IMapper mapper,
+            ISlugService slugService)
         {
-            _repository = repository;
+            _categoryRepository = categoryRepository;
+            _articleRepository = articleRepository;
             _mapper = mapper;
+            _slugService = slugService;
         }
 
         public async Task<Result<ArticleDetailDto>> CreateArticleAsync(CreateArticleDto createArticleDto)
         {
             try
             {
+                var dbCategory = await _categoryRepository.GetByIdAsync(createArticleDto.CategoryId);
+
+                var categoryValidation = CategoryBusinessValidator.ValidateCategoryExists(dbCategory);
+                if (!categoryValidation.IsSuccess)
+                    return Result<ArticleDetailDto>.Failure(categoryValidation.Message);
+
                 var dbArticle = _mapper.Map<Article>(createArticleDto);
                 dbArticle.Id = Guid.NewGuid();
                 dbArticle.CreatedAt = DateTime.UtcNow;
+                dbArticle.Slug = await _slugService.GenerateUniqueSlugAsync(dbArticle.Title);
 
-                var articleDetailDto = _mapper.Map<ArticleDetailDto>(await _repository.CreateAsync(dbArticle));
+                var articleDetailDto = _mapper.Map<ArticleDetailDto>(await _articleRepository.CreateAsync(dbArticle));
 
-                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article created successfully.");
+                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article created successfully");
             }
             catch (Exception ex)
             {
                 return Result<ArticleDetailDto>.Failure($"Error occurred while creating the article: {ex.Message}");
+            }
+        }
+
+        public async Task<Result<ArticleStats>> GetArticlesStatsAsync()
+        {
+            try
+            {
+                var dbArticles = await _articleRepository.GetAllAsync();
+
+                var generatedArticlesStats = ArticleStatsService.GenerateArticleStatsAsync(dbArticles);
+
+                return Result<ArticleStats>.Success(generatedArticlesStats, "Article statistics fetched successfully");
+            }
+            catch (Exception ex)
+            {
+                return Result<ArticleStats>.Failure($"Error occurred while creating the article: {ex.Message}");
             }
         }
 
@@ -47,11 +81,11 @@ namespace NewsPortalCMS.Application.Services
                     articleStatus = parsedStatus;
                 }
 
-                var articles = await _repository.GetAllAsync(articleStatus);
+                var dbArticles = await _articleRepository.GetAllAsync(articleStatus);
 
-                var articlesDto = _mapper.Map<IEnumerable<ArticleListDto>>(articles);
+                var articleListDto = _mapper.Map<IEnumerable<ArticleListDto>>(dbArticles);
 
-                return Result<IEnumerable<ArticleListDto>>.Success(articlesDto, "Articles fetched successfully.");
+                return Result<IEnumerable<ArticleListDto>>.Success(articleListDto, "Articles fetched successfully");
             }
             catch (Exception ex)
             {
@@ -63,15 +97,15 @@ namespace NewsPortalCMS.Application.Services
         {
             try
             {
-                var dbArticle = await _repository.GetByIdAsync(id);
-                var validationResult = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
+                var dbArticle = await _articleRepository.GetByIdAsync(id);
 
-                if (!validationResult.IsSuccess)
-                    return Result<ArticleDetailDto>.Failure(validationResult.Message);
+                var articleValidation = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
+                if (!articleValidation.IsSuccess)
+                    return Result<ArticleDetailDto>.Failure(articleValidation.Message);
 
-                var articleDetailDto = _mapper.Map<ArticleDetailDto>(validationResult.Data);
+                var articleDetailDto = _mapper.Map<ArticleDetailDto>(articleValidation.Data);
 
-                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article found.");
+                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article retrieved successfully");
             }
             catch (Exception ex)
             {
@@ -83,18 +117,29 @@ namespace NewsPortalCMS.Application.Services
         {
             try
             {
-                var dbArticle = await _repository.GetByIdAsync(id);
-                var validationResult = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
+                var dbArticle = await _articleRepository.GetByIdAsync(id);
 
-                if (!validationResult.IsSuccess)
-                    return Result<ArticleDetailDto>.Failure(validationResult.Message);
+                var articleValidation = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
+                if (!articleValidation.IsSuccess)
+                    return Result<ArticleDetailDto>.Failure(articleValidation.Message);
+
+                var dbCategory = await _categoryRepository.GetByIdAsync(updateArticleDto.CategoryId!.Value);
+
+                var categoryValidation = CategoryBusinessValidator.ValidateCategoryExists(dbCategory);
+                if (!categoryValidation.IsSuccess)
+                    return Result<ArticleDetailDto>.Failure(categoryValidation.Message);
 
                 _mapper.Map(updateArticleDto, dbArticle);
 
-                await _repository.UpdateAsync(dbArticle);
+                if (dbArticle!.Title != updateArticleDto.Title)
+                {
+                    dbArticle.Slug = await _slugService.GenerateUniqueSlugAsync(updateArticleDto.Title!);
+                }
+
+                await _articleRepository.UpdateAsync(dbArticle);
 
                 var articleDetailDto = _mapper.Map<ArticleDetailDto>(dbArticle);
-                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article updated successfully.");
+                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article updated successfully");
             }
             catch (Exception ex)
             {
@@ -106,16 +151,18 @@ namespace NewsPortalCMS.Application.Services
         {
             try
             {
-                var article = await _repository.GetByIdAsync(id);
-                if (article == null)
-                    return Result<ArticleDetailDto>.Failure("Article not found.");
+                var dbArticle = await _articleRepository.GetByIdAsync(id);
+                var articleValidation = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
 
-                article.Status = ArticleStatus.Published;
+                if (!articleValidation.IsSuccess)
+                    return Result<ArticleDetailDto>.Failure(articleValidation.Message);
 
-                await _repository.UpdateAsync(article);
+                articleValidation.Data!.Status = ArticleStatus.Published;
+                await _articleRepository.UpdateAsync(articleValidation.Data);
 
-                var publishedDto = _mapper.Map<ArticleDetailDto>(article);
-                return Result<ArticleDetailDto>.Success(publishedDto, "Article published successfully.");
+                var articleDetailDto = _mapper.Map<ArticleDetailDto>(articleValidation.Data);
+                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article published successfully");
+
             }
             catch (Exception ex)
             {

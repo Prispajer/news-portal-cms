@@ -14,7 +14,7 @@ namespace NewsPortalCMS.Infrastructure.Configurations
             builder.Property(x => x.Author).HasColumnType("varchar(100)").IsRequired();
             builder.Property(x => x.Slug).HasColumnType("varchar(150)").IsRequired();
             builder.Property(x => x.Status).HasConversion(v => v.ToString(), v => (ArticleStatus)Enum.Parse(typeof(ArticleStatus), v)).IsRequired();
-            builder.Property(x => x.CreatedAt).IsRequired();
+            builder.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP").IsRequired();
         }
     }
 }

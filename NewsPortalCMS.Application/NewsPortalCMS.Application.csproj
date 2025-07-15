@@ -6,6 +6,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <RestoreFallbackFolders>clear</RestoreFallbackFolders>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\NewsPortalCMS.Domain\NewsPortalCMS.Domain.csproj" />
   </ItemGroup>

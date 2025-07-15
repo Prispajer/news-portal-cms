@@ -8,7 +8,7 @@
         public string Author { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
         public ArticleStatus Status { get; set; } = ArticleStatus.Draft;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } 
 
         public Guid CategoryId { get; set; }
         public Category Category { get; set; } = null!;
