@@ -31,143 +31,101 @@ namespace NewsPortalCMS.Application.Services
 
         public async Task<Result<ArticleDetailDto>> CreateArticleAsync(CreateArticleDto createArticleDto)
         {
-            try
-            {
-                var dbCategory = await _categoryRepository.GetByIdAsync(createArticleDto.CategoryId);
+            var dbCategory = await _categoryRepository.GetByIdAsync(createArticleDto.CategoryId);
 
-                var categoryValidation = CategoryBusinessValidator.ValidateCategoryExists(dbCategory);
-                if (!categoryValidation.IsSuccess)
-                    return Result<ArticleDetailDto>.Failure(categoryValidation.Message);
+            var categoryValidation = CategoryBusinessValidator.ValidateCategoryExists(dbCategory);
+            if (!categoryValidation.IsSuccess)
+                return Result<ArticleDetailDto>.Failure(categoryValidation.Message);
 
-                var dbArticle = _mapper.Map<Article>(createArticleDto);
-                dbArticle.Id = Guid.NewGuid();
-                dbArticle.CreatedAt = DateTime.UtcNow;
-                dbArticle.Slug = await _slugService.GenerateUniqueSlugAsync(dbArticle.Title);
+            var dbArticle = _mapper.Map<Article>(createArticleDto);
+            dbArticle.Id = Guid.NewGuid();
+            dbArticle.CreatedAt = DateTime.UtcNow;
+            dbArticle.Slug = await _slugService.GenerateUniqueSlugAsync(dbArticle.Title);
 
-                var articleDetailDto = _mapper.Map<ArticleDetailDto>(await _articleRepository.CreateAsync(dbArticle));
+            var articleDetailDto = _mapper.Map<ArticleDetailDto>(await _articleRepository.CreateAsync(dbArticle));
 
-                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article created successfully");
-            }
-            catch (Exception ex)
-            {
-                return Result<ArticleDetailDto>.Failure($"Error occurred while creating the article: {ex.Message}");
-            }
+            return Result<ArticleDetailDto>.Success(articleDetailDto, "Article created successfully");
         }
 
         public async Task<Result<ArticleStats>> GetArticlesStatsAsync()
         {
-            try
-            {
-                var dbArticles = await _articleRepository.GetAllAsync();
+            var dbArticles = await _articleRepository.GetAllAsync();
 
-                var generatedArticlesStats = ArticleStatsService.GenerateArticleStatsAsync(dbArticles);
+            var generatedArticlesStats = ArticleStatsService.GenerateArticleStatsAsync(dbArticles);
 
-                return Result<ArticleStats>.Success(generatedArticlesStats, "Article statistics fetched successfully");
-            }
-            catch (Exception ex)
-            {
-                return Result<ArticleStats>.Failure($"Error occurred while creating the article: {ex.Message}");
-            }
+            return Result<ArticleStats>.Success(generatedArticlesStats, "Article statistics fetched successfully");
         }
 
         public async Task<Result<IEnumerable<ArticleListDto>>> GetArticlesAsync(string? status)
         {
-            try
+            ArticleStatus? articleStatus = null;
+
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<ArticleStatus>(status, true, out var parsedStatus))
             {
-                ArticleStatus? articleStatus = null;
-
-                if (!string.IsNullOrEmpty(status) && Enum.TryParse<ArticleStatus>(status, true, out var parsedStatus))
-                {
-                    articleStatus = parsedStatus;
-                }
-
-                var dbArticles = await _articleRepository.GetAllAsync(articleStatus);
-
-                var articleListDto = _mapper.Map<IEnumerable<ArticleListDto>>(dbArticles);
-
-                return Result<IEnumerable<ArticleListDto>>.Success(articleListDto, "Articles fetched successfully");
+                articleStatus = parsedStatus;
             }
-            catch (Exception ex)
-            {
-                return Result<IEnumerable<ArticleListDto>>.Failure($"Error occurred while fetching articles: {ex.Message}");
-            }
+
+            var dbArticles = await _articleRepository.GetAllAsync(articleStatus);
+
+            var articleListDto = _mapper.Map<IEnumerable<ArticleListDto>>(dbArticles);
+
+            return Result<IEnumerable<ArticleListDto>>.Success(articleListDto, "Articles fetched successfully");
         }
 
         public async Task<Result<ArticleDetailDto>> GetArticleAsync(Guid id)
         {
-            try
-            {
-                var dbArticle = await _articleRepository.GetByIdAsync(id);
 
-                var articleValidation = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
-                if (!articleValidation.IsSuccess)
-                    return Result<ArticleDetailDto>.Failure(articleValidation.Message);
+            var dbArticle = await _articleRepository.GetByIdAsync(id);
 
-                var articleDetailDto = _mapper.Map<ArticleDetailDto>(articleValidation.Data);
+            var articleValidation = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
+            if (!articleValidation.IsSuccess)
+                return Result<ArticleDetailDto>.Failure(articleValidation.Message);
 
-                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article retrieved successfully");
-            }
-            catch (Exception ex)
-            {
-                return Result<ArticleDetailDto>.Failure($"Error occurred while fetching the article: {ex.Message}");
-            }
+            var articleDetailDto = _mapper.Map<ArticleDetailDto>(articleValidation.Data);
+
+            return Result<ArticleDetailDto>.Success(articleDetailDto, "Article retrieved successfully");
         }
 
         public async Task<Result<ArticleDetailDto>> UpdateArticleAsync(Guid id, UpdateArticleDto updateArticleDto)
         {
-            try
+            var dbArticle = await _articleRepository.GetByIdAsync(id);
+
+            var articleValidation = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
+            if (!articleValidation.IsSuccess)
+                return Result<ArticleDetailDto>.Failure(articleValidation.Message);
+
+            var dbCategory = await _categoryRepository.GetByIdAsync(updateArticleDto.CategoryId!.Value);
+
+            var categoryValidation = CategoryBusinessValidator.ValidateCategoryExists(dbCategory);
+            if (!categoryValidation.IsSuccess)
+                return Result<ArticleDetailDto>.Failure(categoryValidation.Message);
+
+            _mapper.Map(updateArticleDto, dbArticle);
+
+            if (dbArticle!.Title != updateArticleDto.Title)
             {
-                var dbArticle = await _articleRepository.GetByIdAsync(id);
-
-                var articleValidation = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
-                if (!articleValidation.IsSuccess)
-                    return Result<ArticleDetailDto>.Failure(articleValidation.Message);
-
-                var dbCategory = await _categoryRepository.GetByIdAsync(updateArticleDto.CategoryId!.Value);
-
-                var categoryValidation = CategoryBusinessValidator.ValidateCategoryExists(dbCategory);
-                if (!categoryValidation.IsSuccess)
-                    return Result<ArticleDetailDto>.Failure(categoryValidation.Message);
-
-                _mapper.Map(updateArticleDto, dbArticle);
-
-                if (dbArticle!.Title != updateArticleDto.Title)
-                {
-                    dbArticle.Slug = await _slugService.GenerateUniqueSlugAsync(updateArticleDto.Title!);
-                }
-
-                await _articleRepository.UpdateAsync(dbArticle);
-
-                var articleDetailDto = _mapper.Map<ArticleDetailDto>(dbArticle);
-                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article updated successfully");
+                dbArticle.Slug = await _slugService.GenerateUniqueSlugAsync(updateArticleDto.Title!);
             }
-            catch (Exception ex)
-            {
-                return Result<ArticleDetailDto>.Failure($"Error occurred while updating the article: {ex.Message}");
-            }
+
+            await _articleRepository.UpdateAsync(dbArticle);
+
+            var articleDetailDto = _mapper.Map<ArticleDetailDto>(dbArticle);
+            return Result<ArticleDetailDto>.Success(articleDetailDto, "Article updated successfully");
         }
 
         public async Task<Result<ArticleDetailDto>> PublishArticleAsync(Guid id)
         {
-            try
-            {
-                var dbArticle = await _articleRepository.GetByIdAsync(id);
-                var articleValidation = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
+            var dbArticle = await _articleRepository.GetByIdAsync(id);
+            var articleValidation = ArticleBusinessValidator.ValidateArticleExists(dbArticle);
 
-                if (!articleValidation.IsSuccess)
-                    return Result<ArticleDetailDto>.Failure(articleValidation.Message);
+            if (!articleValidation.IsSuccess)
+                return Result<ArticleDetailDto>.Failure(articleValidation.Message);
 
-                articleValidation.Data!.Status = ArticleStatus.Published;
-                await _articleRepository.UpdateAsync(articleValidation.Data);
+            articleValidation.Data!.Status = ArticleStatus.Published;
+            await _articleRepository.UpdateAsync(articleValidation.Data);
 
-                var articleDetailDto = _mapper.Map<ArticleDetailDto>(articleValidation.Data);
-                return Result<ArticleDetailDto>.Success(articleDetailDto, "Article published successfully");
-
-            }
-            catch (Exception ex)
-            {
-                return Result<ArticleDetailDto>.Failure($"Error occurred while publishing the article: {ex.Message}");
-            }
+            var articleDetailDto = _mapper.Map<ArticleDetailDto>(articleValidation.Data);
+            return Result<ArticleDetailDto>.Success(articleDetailDto, "Article published successfully");
         }
     }
 }

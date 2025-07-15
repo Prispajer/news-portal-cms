@@ -34,7 +34,7 @@ docker-run:
 	docker run -p 5000:8080 newsportal-api
 
 docker-compose-up:
-	docker-compose up --build
+	docker-compose up --build 
 
 docker-compose-down:
 	docker-compose down -v

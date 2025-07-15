@@ -1,5 +1,6 @@
 ﻿using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
+using NewsPortalCMS.Api.Middleware;
 using NewsPortalCMS.Application.Interfaces;
 using NewsPortalCMS.Application.Mappings;
 using NewsPortalCMS.Application.Services;
@@ -60,5 +61,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.MapControllers();
 app.Run();

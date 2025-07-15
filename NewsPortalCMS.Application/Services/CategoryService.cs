@@ -19,43 +19,29 @@ namespace NewsPortalCMS.Application.Services
 
         public async Task<Result<CategoryDetailDto>> CreateCategoryAsync(CreateCategoryDto createCategoryDto)
         {
-            try
+            var dbCategory = await _categoryRepository.GetByNameAsync(createCategoryDto.Name);
+
+            if (dbCategory)
             {
-                var dbCategory = await _categoryRepository.GetByNameAsync(createCategoryDto.Name);
-
-                if (dbCategory)
-                {
-                    return Result<CategoryDetailDto>.Failure("Category name must be unique");
-                }
-
-                var category = _mapper.Map<Category>(createCategoryDto);
-                category.Id = Guid.NewGuid();
-                var createdCategory = await _categoryRepository.CreateAsync(category);
-
-                var categoryDetailDto = _mapper.Map<CategoryDetailDto>(createdCategory);
-
-                return Result<CategoryDetailDto>.Success(categoryDetailDto, "Data has been created");
+                return Result<CategoryDetailDto>.Failure("Category name must be unique");
             }
-            catch (Exception ex)
-            {
-                return Result<CategoryDetailDto>.Failure($"An error has occured during creating article: {ex.Message}");
-            }
+
+            var category = _mapper.Map<Category>(createCategoryDto);
+            category.Id = Guid.NewGuid();
+            var createdCategory = await _categoryRepository.CreateAsync(category);
+
+            var categoryDetailDto = _mapper.Map<CategoryDetailDto>(createdCategory);
+
+            return Result<CategoryDetailDto>.Success(categoryDetailDto, "Data has been created");
         }
 
         public async Task<Result<IEnumerable<CategoryDetailDto>>> GetCategoriesAsync()
         {
-            try
-            {
-                var dbCategories = await _categoryRepository.GetAllAsync();
+            var dbCategories = await _categoryRepository.GetAllAsync();
 
-                var categoriesDetailDto = _mapper.Map<IEnumerable<CategoryDetailDto>>(dbCategories);
+            var categoriesDetailDto = _mapper.Map<IEnumerable<CategoryDetailDto>>(dbCategories);
 
-                return Result<IEnumerable<CategoryDetailDto>>.Success(categoriesDetailDto, "Data has been restored");
-            }
-            catch (Exception ex)
-            {
-                return Result<IEnumerable<CategoryDetailDto>>.Failure($"An error has occured during fetching articles: {ex.Message}");
-            }
+            return Result<IEnumerable<CategoryDetailDto>>.Success(categoriesDetailDto, "Data has been restored");
         }
     }
 }
