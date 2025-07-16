@@ -19,10 +19,13 @@ RUN dotnet publish NewsPortalCMS.sln -c Release -o /app/build
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
+ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /wait-for-it.sh
+RUN chmod +x /wait-for-it.sh
+
 COPY --from=build /app/build ./
 
 EXPOSE 5000
 EXPOSE 5001
 
-ENTRYPOINT ["dotnet", "NewsPortalCMS.Api.dll"]
+ENTRYPOINT ["/wait-for-it.sh", "postgres:5432", "--timeout=30", "--strict", "--", "dotnet", "NewsPortalCMS.Api.dll"]
 	

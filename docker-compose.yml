@@ -24,7 +24,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5000
-      ConnectionStrings__DefaultConnection: Host=host.docker.internal;Port=5433;Database=NewsPortalCMS;Username=postgres;Password=randompassword
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=NewsPortalCMS;Username=postgres;Password=randompassword
     depends_on:
       - postgres
 
